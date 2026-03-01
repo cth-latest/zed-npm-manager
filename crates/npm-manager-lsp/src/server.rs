@@ -88,7 +88,19 @@ impl Backend {
         self.client
             .publish_diagnostics(uri, diagnostics, None)
             .await;
+
+        // Request client to refresh inlay hints so they appear immediately
+        let _ = self.client.send_request::<InlayHintRefreshRequest>(()).await;
     }
+}
+
+/// Custom request type for workspace/inlayHint/refresh
+enum InlayHintRefreshRequest {}
+
+impl tower_lsp::lsp_types::request::Request for InlayHintRefreshRequest {
+    type Params = ();
+    type Result = ();
+    const METHOD: &'static str = "workspace/inlayHint/refresh";
 }
 
 #[tower_lsp::async_trait]
