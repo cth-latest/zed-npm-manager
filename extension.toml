@@ -1,6 +1,6 @@
 id = "npm-manager"
 name = "NPM Manager"
-version = "0.0.1"
+version = "1.0.0"
 schema_version = 1
 authors = ["cth-latest"]
 repository = "https://github.com/cth-latest/zed-npm-manager"
