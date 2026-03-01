@@ -1,0 +1,11 @@
+id = "npm-manager"
+name = "NPM Manager"
+version = "0.0.1"
+schema_version = 1
+authors = ["cth-latest"]
+repository = "https://github.com/cth-latest/zed-npm-manager"
+description = "Show npm/pnpm package version status inline in package.json and pnpm-workspace.yaml"
+
+[language_servers.npm-manager-lsp]
+name = "npm-manager-lsp"
+languages = ["JSON", "YAML"]

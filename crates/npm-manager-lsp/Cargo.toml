@@ -1,0 +1,21 @@
+[package]
+name = "npm-manager-lsp"
+version = "0.0.1"
+edition = "2021"
+
+[[bin]]
+name = "npm-manager-lsp"
+path = "src/main.rs"
+
+[dependencies]
+tower-lsp = "0.20"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yml = "0.0.12"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+semver = "1"
+dashmap = "6"
+regex = "1"
+tracing = "0.1"
+tracing-subscriber = "0.3"

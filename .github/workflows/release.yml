@@ -1,0 +1,88 @@
+name: Release LSP Binary
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            asset: npm-manager-lsp-aarch64-apple-darwin
+          - target: x86_64-apple-darwin
+            os: macos-13
+            asset: npm-manager-lsp-x86_64-apple-darwin
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            asset: npm-manager-lsp-x86_64-unknown-linux-musl
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            asset: npm-manager-lsp-aarch64-unknown-linux-musl
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            asset: npm-manager-lsp-x86_64-pc-windows-msvc.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install musl tools (Linux x86_64)
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Install cross (Linux aarch64)
+        if: matrix.target == 'aarch64-unknown-linux-musl'
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Build (cross)
+        if: matrix.target == 'aarch64-unknown-linux-musl'
+        run: cross build --release --target ${{ matrix.target }} -p npm-manager-lsp
+
+      - name: Build (cargo)
+        if: matrix.target != 'aarch64-unknown-linux-musl'
+        run: cargo build --release --target ${{ matrix.target }} -p npm-manager-lsp
+
+      - name: Rename binary (Unix)
+        if: runner.os != 'Windows'
+        run: cp target/${{ matrix.target }}/release/npm-manager-lsp ${{ matrix.asset }}
+
+      - name: Rename binary (Windows)
+        if: runner.os == 'Windows'
+        run: cp target/${{ matrix.target }}/release/npm-manager-lsp.exe ${{ matrix.asset }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
