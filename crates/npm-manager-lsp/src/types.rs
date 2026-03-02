@@ -107,6 +107,28 @@ pub struct NpmRegistryResponse {
     pub dist_tags: HashMap<String, String>,
 }
 
+/// Protocol-based specifiers that should not be resolved against the npm registry.
+const SKIP_PROTOCOLS: &[&str] = &[
+    "catalog:",
+    "workspace:",
+    "link:",
+    "file:",
+    "portal:",
+    "npm:",
+    "git+",
+    "git://",
+    "github:",
+    "http://",
+    "https://",
+];
+
+/// Returns true if the version string is a protocol reference (catalog:, workspace:*, etc.)
+/// that should be skipped rather than resolved against the npm registry.
+pub fn is_protocol_version(version: &str) -> bool {
+    let v = version.trim();
+    SKIP_PROTOCOLS.iter().any(|p| v.starts_with(p))
+}
+
 /// Clean version specifier prefixes from a version string
 pub fn clean_version(version: &str) -> &str {
     let v = version.trim();

@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use crate::types::{clean_version, DependencyEntry, DependencyType, VersionStatus};
+use crate::types::{clean_version, is_protocol_version, DependencyEntry, DependencyType, VersionStatus};
 
 pub fn parse(text: &str) -> Vec<DependencyEntry> {
     let yaml: serde_yml::Value = match serde_yml::from_str(text) {
@@ -55,6 +55,11 @@ pub fn parse(text: &str) -> Vec<DependencyEntry> {
 
     let mut entries = Vec::with_capacity(all_deps.len());
     for (name, raw_version, dep_type) in all_deps {
+        // Skip protocol references like catalog:, workspace:*, link:, etc.
+        if is_protocol_version(&raw_version) {
+            continue;
+        }
+
         let cleaned = clean_version(&raw_version).to_string();
         if cleaned.is_empty() {
             continue;
