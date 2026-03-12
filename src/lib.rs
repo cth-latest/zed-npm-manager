@@ -79,7 +79,6 @@ impl NpmManagerExtension {
 
             zed::make_file_executable(&binary_path)?;
 
-            // Clean up old versions
             let entries = fs::read_dir(".")
                 .map_err(|err| format!("failed to list working directory: {err}"))?;
             for entry in entries {

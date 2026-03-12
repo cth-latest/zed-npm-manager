@@ -13,7 +13,6 @@ const MAX_CONCURRENT_FETCHES: usize = 10;
 static PRERELEASE_PATTERN: &str =
     r"(?i)(?:alpha|beta|rc|dev|post|preview|snapshot|canary|insider|insiders|internal|development)";
 
-/// Fetch version info from npm registry for all dependencies, updating their status in place.
 pub async fn fetch_all(state: &ServerState, dependencies: &mut [DependencyEntry]) {
     let config = state.config();
     let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_FETCHES));
@@ -28,7 +27,6 @@ pub async fn fetch_all(state: &ServerState, dependencies: &mut [DependencyEntry]
         let name = dependencies[i].name.clone();
         let cache_ttl = Duration::from_secs(config.cache_ttl_seconds);
 
-        // Check cache first
         if let Some(cached) = state.registry_cache.get(&name) {
             if cached.fetched_at.elapsed() < cache_ttl {
                 dependencies[i].status =

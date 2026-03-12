@@ -2,17 +2,12 @@ use std::collections::HashMap;
 
 use regex::Regex;
 
-/// Parse yarn.lock and extract installed versions.
-/// Handles both yarn v1 (custom format) and yarn v2+ (also custom but similar).
 pub fn parse(content: &str) -> Option<HashMap<String, String>> {
     let mut versions = HashMap::new();
     let mut current_packages: Vec<String> = Vec::new();
 
-    // Match header lines like: "express@^4.18.0":  or  express@^4.18.0, express@^4.17.0:
     let header_re = Regex::new(r#"^["']?([^,\n]+?)["']?(?:,\s*["']?[^,\n]+?["']?)*:\s*$"#).ok()?;
-    // Match version line like:   version "4.18.2"  or   version: "4.18.2"
     let version_re = Regex::new(r#"^\s+version:?\s+"([^"]+)""#).ok()?;
-    // Extract package name from spec like "express@^4.18.0"
     let name_re = Regex::new(r#"^(@?[^@\s]+)@"#).ok()?;
 
     for line in content.lines() {

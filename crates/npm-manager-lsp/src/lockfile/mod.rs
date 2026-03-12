@@ -6,13 +6,10 @@ mod yarn;
 use std::collections::HashMap;
 use std::path::Path;
 
-/// Resolve installed versions by searching for lock files in the given directory
-/// and parent directories. Returns a map of package name -> installed version.
 pub fn resolve_installed_versions(dir: &Path) -> HashMap<String, String> {
     let mut current = Some(dir);
 
     while let Some(d) = current {
-        // Try each lock file format in priority order
         let lock_path = d.join("package-lock.json");
         if lock_path.exists() {
             if let Ok(content) = std::fs::read_to_string(&lock_path) {

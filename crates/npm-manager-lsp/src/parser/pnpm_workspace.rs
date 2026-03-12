@@ -15,7 +15,6 @@ pub fn parse(text: &str) -> Vec<DependencyEntry> {
 
     let mut all_deps: Vec<(String, String, DependencyType)> = Vec::new();
 
-    // Single catalog: { catalog: { pkg: "^1.0.0" } }
     if let Some(catalog) = mapping.get(&serde_yml::Value::String("catalog".into())) {
         if let Some(map) = catalog.as_mapping() {
             for (k, v) in map {
@@ -30,7 +29,6 @@ pub fn parse(text: &str) -> Vec<DependencyEntry> {
         }
     }
 
-    // Named catalogs: { catalogs: { default: { pkg: "^1.0.0" } } }
     if let Some(catalogs) = mapping.get(&serde_yml::Value::String("catalogs".into())) {
         if let Some(catalogs_map) = catalogs.as_mapping() {
             for (catalog_name_val, catalog_obj) in catalogs_map {
@@ -55,13 +53,12 @@ pub fn parse(text: &str) -> Vec<DependencyEntry> {
 
     let mut entries = Vec::with_capacity(all_deps.len());
     for (name, raw_version, dep_type) in all_deps {
-        // Skip protocol references like catalog:, workspace:*, link:, etc.
         if is_protocol_version(&raw_version) {
             continue;
         }
 
         let cleaned = clean_version(&raw_version).to_string();
-        if cleaned.is_empty() {
+        if cleaned.is_empty() || is_protocol_version(&cleaned) {
             continue;
         }
 
@@ -84,9 +81,7 @@ pub fn parse(text: &str) -> Vec<DependencyEntry> {
     entries
 }
 
-/// Find position of a YAML dependency line like `  package-name: ^1.2.3`
 fn find_yaml_dep_position(text: &str, name: &str, version: &str) -> Option<(u32, u32, u32)> {
-    // YAML keys may be quoted or unquoted
     let pattern = format!(
         r#"(?m)^(\s*)['"]?{}['"]?\s*:\s*['"]?{}['"]?\s*$"#,
         regex::escape(name),

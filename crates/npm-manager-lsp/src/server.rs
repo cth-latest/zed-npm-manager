@@ -57,7 +57,6 @@ impl Backend {
             return;
         }
 
-        // Resolve installed versions from lock files
         let config = self.state.config();
         if config.show_installed_version {
             if let Ok(path) = uri.to_file_path() {
@@ -72,10 +71,8 @@ impl Backend {
             }
         }
 
-        // Fetch registry info for all dependencies
         registry::fetch_all(&self.state, &mut dependencies).await;
 
-        // Store document state
         let doc_state = crate::types::DocumentState {
             content: text,
             dependencies: dependencies.clone(),
@@ -83,18 +80,15 @@ impl Backend {
         };
         self.state.documents.insert(uri.clone(), doc_state);
 
-        // Publish diagnostics
         let diagnostics = build_diagnostics(&dependencies);
         self.client
             .publish_diagnostics(uri, diagnostics, None)
             .await;
 
-        // Request client to refresh inlay hints so they appear immediately
         let _ = self.client.send_request::<InlayHintRefreshRequest>(()).await;
     }
 }
 
-/// Custom request type for workspace/inlayHint/refresh
 enum InlayHintRefreshRequest {}
 
 impl tower_lsp::lsp_types::request::Request for InlayHintRefreshRequest {
@@ -106,7 +100,6 @@ impl tower_lsp::lsp_types::request::Request for InlayHintRefreshRequest {
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
-        // Parse initialization options for config
         if let Some(opts) = params.initialization_options {
             if let Ok(config) = serde_json::from_value::<Config>(opts) {
                 *self.state.config.write().unwrap() = config;
@@ -256,11 +249,11 @@ impl LanguageServer for Backend {
 fn format_inlay_label(dep: &crate::types::DependencyEntry, show_installed: bool) -> String {
     let status = match &dep.status {
         VersionStatus::Loading => "...".to_string(),
-        VersionStatus::UpToDate => "\u{2713}".to_string(), // ✓
-        VersionStatus::Outdated { latest } => format!("\u{2191} {latest}"), // ↑
-        VersionStatus::Invalid { latest } => format!("\u{26a0} {latest}"), // ⚠
-        VersionStatus::NotFound => "\u{2717}".to_string(),  // ✗
-        VersionStatus::Error(_) => "\u{2717}".to_string(),  // ✗
+        VersionStatus::UpToDate => "\u{2713}".to_string(),
+        VersionStatus::Outdated { latest } => format!("\u{2191} {latest}"),
+        VersionStatus::Invalid { latest } => format!("\u{26a0} {latest}"),
+        VersionStatus::NotFound => "\u{2717}".to_string(),
+        VersionStatus::Error(_) => "\u{2717}".to_string(),
     };
 
     if show_installed {

@@ -2,7 +2,6 @@ use regex::Regex;
 
 use crate::types::{clean_version, is_protocol_version, DependencyEntry, DependencyType, VersionStatus};
 
-/// Sections in package.json that contain dependencies as { "name": "version" }
 const DEP_SECTIONS: &[(&str, DependencyType)] = &[
     ("dependencies", DependencyType::Dependencies),
     ("devDependencies", DependencyType::DevDependencies),
@@ -24,7 +23,6 @@ pub fn parse(text: &str) -> Vec<DependencyEntry> {
 
     let mut all_deps: Vec<(String, String, DependencyType)> = Vec::new();
 
-    // Standard dependency sections
     for (section, dep_type) in DEP_SECTIONS {
         if let Some(deps) = obj.get(*section).and_then(|v| v.as_object()) {
             for (name, version) in deps {
@@ -35,7 +33,6 @@ pub fn parse(text: &str) -> Vec<DependencyEntry> {
         }
     }
 
-    // Bun catalogs: root-level "catalog" object
     if let Some(catalog) = obj.get("catalog").and_then(|v| v.as_object()) {
         for (name, version) in catalog {
             if let Some(v) = version.as_str() {
@@ -44,7 +41,6 @@ pub fn parse(text: &str) -> Vec<DependencyEntry> {
         }
     }
 
-    // Bun catalogs: root-level "catalogs" object with named sub-catalogs
     if let Some(catalogs) = obj.get("catalogs").and_then(|v| v.as_object()) {
         for (catalog_name, catalog_obj) in catalogs {
             if let Some(deps) = catalog_obj.as_object() {
@@ -61,16 +57,14 @@ pub fn parse(text: &str) -> Vec<DependencyEntry> {
         }
     }
 
-    // Find line positions for each dependency via regex
     let mut entries = Vec::with_capacity(all_deps.len());
     for (name, raw_version, dep_type) in all_deps {
-        // Skip protocol references like catalog:, workspace:*, link:, etc.
         if is_protocol_version(&raw_version) {
             continue;
         }
 
         let cleaned = clean_version(&raw_version).to_string();
-        if cleaned.is_empty() {
+        if cleaned.is_empty() || is_protocol_version(&cleaned) {
             continue;
         }
 
@@ -92,7 +86,6 @@ pub fn parse(text: &str) -> Vec<DependencyEntry> {
     entries
 }
 
-/// Find the line and column span of a dependency entry like `"name": "^1.2.3"` in the text.
 fn find_dep_position(text: &str, name: &str, version: &str) -> Option<(u32, u32, u32)> {
     let pattern = format!(
         r#""{}"\s*:\s*"{}""#,
@@ -107,7 +100,6 @@ fn find_dep_position(text: &str, name: &str, version: &str) -> Option<(u32, u32,
     let m = re.find(text)?;
     let start_byte = m.start();
 
-    // Convert byte offset to line/col
     let mut line = 0u32;
     let mut line_start_byte = 0usize;
 

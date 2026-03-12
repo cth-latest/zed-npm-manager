@@ -98,7 +98,6 @@ impl Default for Config {
     }
 }
 
-/// npm registry response (abbreviated)
 #[derive(Debug, Deserialize)]
 pub struct NpmRegistryResponse {
     #[serde(default)]
@@ -107,7 +106,6 @@ pub struct NpmRegistryResponse {
     pub dist_tags: HashMap<String, String>,
 }
 
-/// Protocol-based specifiers that should not be resolved against the npm registry.
 const SKIP_PROTOCOLS: &[&str] = &[
     "catalog:",
     "workspace:",
@@ -122,17 +120,22 @@ const SKIP_PROTOCOLS: &[&str] = &[
     "https://",
 ];
 
-/// Returns true if the version string is a protocol reference (catalog:, workspace:*, etc.)
-/// that should be skipped rather than resolved against the npm registry.
 pub fn is_protocol_version(version: &str) -> bool {
     let v = version.trim();
-    SKIP_PROTOCOLS.iter().any(|p| v.starts_with(p))
+    if v.is_empty() {
+        return true;
+    }
+    if SKIP_PROTOCOLS.iter().any(|p| v.starts_with(p)) {
+        return true;
+    }
+    if v.contains(':') {
+        return true;
+    }
+    false
 }
 
-/// Clean version specifier prefixes from a version string
 pub fn clean_version(version: &str) -> &str {
     let v = version.trim();
-    // Strip leading >=, <=, >, <, =, ^, ~
     let v = v.strip_prefix(">=").unwrap_or(v);
     let v = v.strip_prefix("<=").unwrap_or(v);
     let v = v.strip_prefix('>').unwrap_or(v);
